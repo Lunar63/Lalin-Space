@@ -50,8 +50,9 @@ try {
   console.error("Firebase initialization error:", e);
 }
 
-// ข้อมูลลิงก์จริงและข้อมูลติดต่อทั้งหมด (ห้ามลบ)
-const GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/embed?src=rlin3695%40gmail.com&ctz=Asia%2FBangkok";
+// ---------------------------------------------------------
+// [จุดสำหรับเปลี่ยนข้อมูล] - ข้อมูลติดต่อและลิงก์จริง
+// ---------------------------------------------------------
 const LINE_URL = "https://lin.ee/9bBVfef"; 
 const LINE_ID = "@189gxlqd";
 const IG_URL = "https://www.instagram.com/lalinspace639?igsh=MWZtZnl3endxdWhocg==";
@@ -60,7 +61,10 @@ const X_URL = "https://x.com/lalinspace639?s=21";
 const FB_URL = "https://www.facebook.com/share/1KTbyWTPmr/"; 
 const SHOPEE_URL = "https://shopee.co.th/lunaria429";
 
+// ลิงก์รูปโลโก้ของคุณ
 const LALIN_PROFILE = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400&h=400&fit=crop";
+// ---------------------------------------------------------
+
 const EMOJIS = ['🔮', '☁️', '✨', '🌕', '✨', '☀️'];
 
 // --- FULL TAROT DECK (78 CARDS COMPLETE) ---
@@ -142,7 +146,7 @@ const TAROT_DECK = [
   { name: "Two of Pentacles", meaning: "การบริหารจัดการเงินและเวลา การปรับสมดุลในชีวิต", icon: "🪙" },
   { name: "Three of Pentacles", meaning: "การร่วมมือกันทำงานเป็นทีม การได้รับการยกย่องในฝีมือ", icon: "🪙" },
   { name: "Four of Pentacles", meaning: "ความมั่นคงที่มากเกินจนกลายเป็นความยึดติดหรือหวงแหน", icon: "🪙" },
-  { name: "Five of Pentacles", meaning: "ช่วงเวลาที่ยากลำบาดทางการเงิน แต่ยังมีที่พึ่งพิง", icon: "🪙" },
+  { name: "Five of Pentacles", meaning: "ช่วงเวลาที่ยากลำบากทางการเงิน แต่ยังมีที่พึ่งพิง", icon: "🪙" },
   { name: "Six of Pentacles", meaning: "การแบ่งปัน การให้และได้รับความช่วยเหลือที่เท่าเทียม", icon: "🪙" },
   { name: "Seven of Pentacles", meaning: "การรอคอยผลผลิตจากการทำงานหนัก ความอดทนเห็นผลสำเร็จ", icon: "🪙" },
   { name: "Eight of Pentacles", meaning: "ความมุ่งมั่นพัฒนาทักษะ การทำงานที่ประณีตตั้งใจ", icon: "🪙" },
@@ -239,31 +243,28 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-tr from-[#F0F9FF] via-[#E0F2FE] to-[#F5F3FF] text-[#374151] font-sans tracking-tight relative overflow-x-hidden pb-20">
       
-      {/* Background Section (Animation/Emoji) */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {Array.from({ length: 18 }).map((_, i) => (
           <FloatingEmoji key={i} emoji={EMOJIS[i % EMOJIS.length]} />
         ))}
       </div>
 
-      {/* Main Layout - Modified max-width via CSS/Tailwind */}
       <main className="relative z-10 w-full max-w-sm md:max-w-3xl lg:max-w-5xl mx-auto px-4 md:px-8 py-12 flex flex-col min-h-screen transition-all duration-500">
         
-        {/* Header Section */}
         <header className="text-center mb-10">
           <div className="relative inline-block mb-6">
             <div className="absolute inset-0 bg-[#3B82F6]/20 rounded-full blur-3xl animate-pulse"></div>
             <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-white p-1 relative bg-white shadow-xl overflow-hidden">
-              <img src={LALIN_PROFILE} alt="Lalin Profile" className="w-full h-full object-cover rounded-full" />
+              <img src={LALIN_PROFILE} alt="Lalin Profile Logo" className="w-full h-full object-cover rounded-full" />
             </div>
           </div>
           <h1 className="text-3xl md:text-5xl font-serif tracking-[0.15em] text-[#1E40AF] uppercase mb-1 font-bold">Lalin Space</h1>
           <p className="text-[11px] md:text-sm tracking-[0.4em] text-[#60A5FA] uppercase font-extrabold opacity-90">Celestial Soul Guidance</p>
         </header>
 
-        {/* Navigation Section */}
+        {/* Navigation Section - Removed Queue */}
         <nav className="flex justify-center flex-wrap gap-2 md:gap-4 mb-10">
-          {['home', 'about', 'reviews', 'queue'].map(tab => (
+          {['home', 'about', 'reviews'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -278,10 +279,8 @@ export default function App() {
           ))}
         </nav>
 
-        {/* Dynamic Content Section */}
         <div className="flex-1 flex flex-col">
           
-          {/* TAB: HOME */}
           {activeTab === 'home' && (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <section className="bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] md:rounded-[3rem] border border-white shadow-md text-center max-w-2xl mx-auto w-full">
@@ -290,7 +289,6 @@ export default function App() {
                 </p>
               </section>
 
-              {/* Tarot Section */}
               <section className="text-center">
                 {fortune ? (
                   <div className="animate-in zoom-in duration-500 bg-white p-8 md:p-12 rounded-[2.5rem] border-2 border-[#E0F2FE] shadow-2xl relative overflow-hidden max-w-md mx-auto">
@@ -307,7 +305,6 @@ export default function App() {
                 )}
               </section>
 
-              {/* Services Section */}
               <div className="space-y-6">
                 <h3 className="text-[11px] md:text-xs tracking-[0.3em] uppercase text-[#3B82F6] font-extrabold text-center mb-2 opacity-60">Celestial Services</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -335,7 +332,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Contact Buttons Section */}
               <div className="space-y-3 md:space-y-4 pt-4 max-w-2xl mx-auto w-full">
                 <a href={LINE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-4 rounded-full text-xs md:text-sm font-bold tracking-[0.1em] bg-[#10B981] text-white shadow-lg hover:bg-[#059669] transition-all uppercase">
                   <MessageCircle size={18} /> ติดต่อสอบถาม Line : {LINE_ID}
@@ -364,7 +360,6 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB: ABOUT */}
           {activeTab === 'about' && (
             <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
               <div className="bg-white/80 backdrop-blur-xl p-8 md:p-12 rounded-[3rem] shadow-xl border border-white flex flex-col md:flex-row gap-8 items-center">
@@ -377,7 +372,6 @@ export default function App() {
             </div>
           )}
 
-          {/* TAB: REVIEWS (Firebase Integrated) */}
           {activeTab === 'reviews' && (
             <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
               <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-lg border border-blue-50">
@@ -396,53 +390,11 @@ export default function App() {
               </div>
             </div>
           )}
+          
+          {/* Queue Tab Content Block Removed as requested */}
 
-          {/* TAB: QUEUE (Google Calendar Integrated) */}
-          {activeTab === 'queue' && (
-            <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto w-full">
-              <div className="bg-white/90 backdrop-blur-xl p-8 md:p-10 rounded-[3rem] shadow-xl border border-white space-y-6">
-                <div className="text-center mb-4">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
-                    <Calendar size={32} className="text-[#3B82F6]" />
-                  </div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-[#1E40AF] uppercase tracking-widest mb-1 uppercase">Queue & Schedule</h3>
-                  <p className="text-xs md:text-sm text-gray-400 uppercase font-bold tracking-[0.2em]">เช็คคิวจองคิวล่วงหน้า</p>
-                </div>
-
-                {/* Google Calendar Iframe Wrapper */}
-                <div className="relative w-full aspect-[4/5] md:aspect-video rounded-[2rem] overflow-hidden border border-blue-100 shadow-inner bg-white">
-                  <iframe 
-                    src={GOOGLE_CALENDAR_URL} 
-                    style={{ border: 0 }} 
-                    width="100%" 
-                    height="100%" 
-                    frameBorder="0" 
-                    scrolling="no"
-                    title="Google Calendar"
-                  ></iframe>
-                </div>
-
-                <div className="space-y-6 pt-4 max-w-2xl mx-auto">
-                  <div className="flex items-center gap-4 bg-blue-50 p-5 rounded-3xl border border-blue-100">
-                    <CheckCircle2 size={24} className="text-blue-500" />
-                    <span className="text-sm md:text-base font-bold text-blue-700">สามารถเช็ควันว่างเบื้องต้นได้จากปฏิทินด้านบน</span>
-                  </div>
-                  
-                  <a 
-                    href={LINE_URL} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center justify-center gap-3 w-full py-5 rounded-full text-sm md:text-lg font-bold tracking-[0.1em] bg-[#10B981] text-white shadow-xl hover:bg-[#059669] transition-all uppercase"
-                  >
-                    <MessageSquare size={24} /> ติดต่อ จองคิว Line : {LINE_ID}
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Footer Section */}
         <footer className="mt-20 text-center space-y-6">
           <div className="flex justify-center gap-8 opacity-50 text-[#3B82F6]">
             <Moon size={20} />
@@ -456,18 +408,10 @@ export default function App() {
 
       </main>
 
-      {/* CSS ONLY ADJUSTMENTS */}
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600;700&family=Cinzel:wght@400;700&display=swap');
-        
-        body { 
-          font-family: 'Mitr', sans-serif; 
-          -webkit-font-smoothing: antialiased; 
-          background-color: #F0F9FF;
-        }
-
+        body { font-family: 'Mitr', sans-serif; -webkit-font-smoothing: antialiased; background-color: #F0F9FF; }
         .font-serif { font-family: 'Cinzel', serif; }
-
         @keyframes float {
           0% { transform: translate(0, 0) rotate(0deg); }
           25% { transform: translate(25px, -25px) rotate(6deg); }
@@ -475,26 +419,15 @@ export default function App() {
           75% { transform: translate(20px, 10px) rotate(3deg); }
           100% { transform: translate(0, 0) rotate(0deg); }
         }
-
         .animate-float { animation: float linear infinite; }
-
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.2); border-radius: 10px; }
-        
-        .flower-pulse {
-          animation: flower-pulse 2s infinite;
-        }
-
+        .flower-pulse { animation: flower-pulse 2s infinite; }
         @keyframes flower-pulse {
           0% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.2); opacity: 0.7; }
           100% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Responsive Layout Adjustments through CSS */
-        @media (min-width: 768px) {
-          .service-grid { grid-template-columns: repeat(2, 1fr); }
         }
       `}} />
     </div>
