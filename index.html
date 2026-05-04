@@ -53,6 +53,7 @@ try {
 // ---------------------------------------------------------
 // [จุดสำหรับเปลี่ยนข้อมูล] - ข้อมูลติดต่อและลิงก์จริง
 // ---------------------------------------------------------
+const GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/embed?src=rlin3695%40gmail.com&ctz=Asia%2FBangkok";
 const LINE_URL = "https://lin.ee/9bBVfef"; 
 const LINE_ID = "@189gxlqd";
 const IG_URL = "https://www.instagram.com/lalinspace639?igsh=MWZtZnl3endxdWhocg==";
@@ -262,9 +263,9 @@ export default function App() {
           <p className="text-[11px] md:text-sm tracking-[0.4em] text-[#60A5FA] uppercase font-extrabold opacity-90">Celestial Soul Guidance</p>
         </header>
 
-        {/* Navigation Section - Removed Queue */}
+        {/* Navigation Section - Added Queue Back */}
         <nav className="flex justify-center flex-wrap gap-2 md:gap-4 mb-10">
-          {['home', 'about', 'reviews'].map(tab => (
+          {['home', 'about', 'reviews', 'queue'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -307,7 +308,7 @@ export default function App() {
 
               <div className="space-y-6">
                 <h3 className="text-[11px] md:text-xs tracking-[0.3em] uppercase text-[#3B82F6] font-extrabold text-center mb-2 opacity-60">Celestial Services</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 service-grid">
                   {SERVICES.map(s => (
                     <a 
                       key={s.id} 
@@ -390,8 +391,50 @@ export default function App() {
               </div>
             </div>
           )}
-          
-          {/* Queue Tab Content Block Removed as requested */}
+
+          {/* TAB: QUEUE (Restored Section) */}
+          {activeTab === 'queue' && (
+            <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto w-full">
+              <div className="bg-white/90 backdrop-blur-xl p-8 md:p-10 rounded-[3rem] shadow-xl border border-white space-y-6">
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                    <Calendar size={32} className="text-[#3B82F6]" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold text-[#1E40AF] uppercase tracking-widest mb-1 uppercase">Queue & Schedule</h3>
+                  <p className="text-xs md:text-sm text-gray-400 uppercase font-bold tracking-[0.2em]">เช็คคิวจองคิวล่วงหน้า</p>
+                </div>
+
+                {/* Google Calendar Iframe Wrapper */}
+                <div className="relative w-full aspect-[4/5] md:aspect-video rounded-[2rem] overflow-hidden border border-blue-100 shadow-inner bg-white">
+                  <iframe 
+                    src={GOOGLE_CALENDAR_URL} 
+                    style={{ border: 0 }} 
+                    width="100%" 
+                    height="100%" 
+                    frameBorder="0" 
+                    scrolling="no"
+                    title="Google Calendar"
+                  ></iframe>
+                </div>
+
+                <div className="space-y-6 pt-4 max-w-2xl mx-auto">
+                  <div className="flex items-center gap-4 bg-blue-50 p-5 rounded-3xl border border-blue-100">
+                    <CheckCircle2 size={24} className="text-blue-500" />
+                    <span className="text-sm md:text-base font-bold text-blue-700">สามารถเช็ควันว่างเบื้องต้นได้จากปฏิทินด้านบน</span>
+                  </div>
+                  
+                  <a 
+                    href={LINE_URL} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center justify-center gap-3 w-full py-5 rounded-full text-sm md:text-lg font-bold tracking-[0.1em] bg-[#10B981] text-white shadow-xl hover:bg-[#059669] transition-all uppercase"
+                  >
+                    <MessageSquare size={24} /> ติดต่อ จองคิว Line : {LINE_ID}
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
 
@@ -428,6 +471,11 @@ export default function App() {
           0% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.2); opacity: 0.7; }
           100% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* Responsive Layout Adjustments through CSS */
+        @media (min-width: 768px) {
+          .service-grid { grid-template-columns: repeat(2, 1fr); }
         }
       `}} />
     </div>
