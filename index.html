@@ -28,7 +28,9 @@ import {
   collection, 
   addDoc, 
   onSnapshot, 
-  serverTimestamp 
+  serverTimestamp,
+  query,
+  orderBy
 } from 'firebase/firestore';
 import { 
   getAuth, 
@@ -37,7 +39,7 @@ import {
   onAuthStateChanged 
 } from 'firebase/auth';
 
-// --- INITIALIZATION ---
+// --- FIREBASE CONFIG & INIT ---
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'lalin-space-celestial-v2';
 let db, auth;
 
@@ -47,13 +49,10 @@ try {
   auth = getAuth(app);
   db = getFirestore(app);
 } catch (e) {
-  console.error("Firebase initialization error:", e);
+  console.error("Firebase connection error:", e);
 }
 
-// ---------------------------------------------------------
-// [จุดสำหรับเปลี่ยนข้อมูล] - ข้อมูลติดต่อและลิงก์จริง
-// ---------------------------------------------------------
-const GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/embed?src=rlin3695%40gmail.com&ctz=Asia%2FBangkok";
+// --- CONSTANTS ---
 const LINE_URL = "https://lin.ee/9bBVfef"; 
 const LINE_ID = "@189gxlqd";
 const IG_URL = "https://www.instagram.com/lalinspace639?igsh=MWZtZnl3endxdWhocg==";
@@ -61,12 +60,9 @@ const TIKTOK_URL = "https://www.tiktok.com/@lalinspace639?_r=1&_t=ZS-95wohBDvSc9
 const X_URL = "https://x.com/lalinspace639?s=21";
 const FB_URL = "https://www.facebook.com/share/1KTbyWTPmr/"; 
 const SHOPEE_URL = "https://shopee.co.th/lunaria429";
-
-// ลิงก์รูปโลโก้ของคุณ
+const GOOGLE_CALENDAR_URL = "https://calendar.google.com/calendar/embed?src=rlin3695%40gmail.com&ctz=Asia%2FBangkok";
 const LALIN_PROFILE = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400&h=400&fit=crop";
-// ---------------------------------------------------------
-
-const EMOJIS = ['🔮', '☁️', '✨', '🌕', '✨', '☀️'];
+const EMOJIS = ['🔮', '☁️', '✨', '🌕', '🌙', '☀️', '⭐', '🪐'];
 
 // --- FULL TAROT DECK (78 CARDS COMPLETE) ---
 const TAROT_DECK = [
@@ -76,7 +72,7 @@ const TAROT_DECK = [
   { name: "The High Priestess", meaning: "สัญชาตญาณ ความลึกลับ และความรู้แจ้งภายในใจ", icon: "🔮" },
   { name: "The Empress", meaning: "ความอุดมสมบูรณ์ ความเป็นแม่ และการดูแลเอาใจใส่", icon: "🌿" },
   { name: "The Emperor", meaning: "โครงสร้าง อำนาจ และความเป็นระเบียบวินัย", icon: "👑" },
-  { name: "The Hierophant", meaning: "ประเพณี ความเชื่อ และการเรียนรู้สิ่งใหม่ๆ จากครูอาจารย์", icon: "⛪" },
+  { name: "The Hierophant", meaning: "ประเพณี ความเชื่อ และการเรียนรู้สิ่งใหม่ๆ", icon: "⛪" },
   { name: "The Lovers", meaning: "ทางเลือก ความรัก และความสอดประสานกันของหัวใจ", icon: "❤️" },
   { name: "The Chariot", meaning: "ความมุ่งมั่น ชัยชนะ และการควบคุมทิศทางชีวิต", icon: "🏎️" },
   { name: "Strength", meaning: "ความกล้าหาญ ความอดทน และพลังแห่งความเมตตา", icon: "🦁" },
@@ -92,104 +88,97 @@ const TAROT_DECK = [
   { name: "The Moon", meaning: "จินตนาการ ความกังวล และสัญชาตญาณที่ลึกล้ำ", icon: "🌙" },
   { name: "The Sun", meaning: "ความสุข ความสำเร็จ และพลังงานบวกที่สดใส", icon: "☀️" },
   { name: "Judgement", meaning: "การตื่นรู้ การฟื้นคืน และการตัดสินครั้งสำคัญ", icon: "🔔" },
-  { name: "The World", meaning: "ความสมบูรณ์แบบ ความสำเร็จ และจุดสิ้นสุดของการเดินทาง", icon: "🌍" },
+  { name: "The World", meaning: "ความสมบูรณ์แบบ ความสำเร็จ และจุดสิ้นสุดการเดินทาง", icon: "🌍" },
 
   // Wands (14)
-  { name: "Ace of Wands", meaning: "การเริ่มต้นใหม่ที่มีพลัง แรงบันดาลใจอันแรงกล้า", icon: "🦯" },
-  { name: "Two of Wands", meaning: "การวางแผนก้าวหน้า การขยายวิสัยทัศน์ไปสู่อนาคต", icon: "🦯" },
-  { name: "Three of Wands", meaning: "ความสำเร็จเบื้องต้นและการรอคอยผลลัพธ์ที่ดี", icon: "🦯" },
-  { name: "Four of Wands", meaning: "ความสุขสมบูรณ์ ความมั่นคงในครอบครัวและการเฉลิมฉลอง", icon: "🦯" },
-  { name: "Five of Wands", meaning: "ความวุ่นวาย การแข่งขัน หรือความขัดแย้งเพื่อการเติบโต", icon: "🦯" },
-  { name: "Six of Wands", meaning: "ชัยชนะ การได้รับการยอมรับ และความสำเร็จที่โดดเด่น", icon: "🦯" },
-  { name: "Seven of Wands", meaning: "การยืนหยัดต่อสู้เพื่อสิทธิ์ของตนเองและความเชื่อ", icon: "🦯" },
+  { name: "Ace of Wands", meaning: "แรงบันดาลใจใหม่ การเริ่มต้นงานที่น่าตื่นเต้น", icon: "🦯" },
+  { name: "Two of Wands", meaning: "การวางแผนก้าวหน้า การขยายวิสัยทัศน์", icon: "🦯" },
+  { name: "Three of Wands", meaning: "การรอคอยผลลัพธ์และความสำเร็จเบื้องต้น", icon: "🦯" },
+  { name: "Four of Wands", meaning: "ความมั่นคง การเฉลิมฉลอง และความสุขในครอบครัว", icon: "🦯" },
+  { name: "Five of Wands", meaning: "ความวุ่นวาย การแข่งขัน หรือความขัดแย้งเล็กน้อย", icon: "🦯" },
+  { name: "Six of Wands", meaning: "ชัยชนะ การได้รับการยอมรับ และความสำเร็จ", icon: "🦯" },
+  { name: "Seven of Wands", meaning: "การยืนหยัดต่อสู้เพื่อสิทธิ์และความเชื่อของตนเอง", icon: "🦯" },
   { name: "Eight of Wands", meaning: "ข่าวดีที่มาถึงอย่างรวดเร็ว ความก้าวหน้าที่ว่องไว", icon: "🦯" },
-  { name: "Nine of Wands", meaning: "ความพยายามครั้งสุดท้าย ความอดทนก่อนถึงเป้าหมาย", icon: "🦯" },
-  { name: "Ten of Wands", meaning: "ภาระงานที่หนักอึ้ง ความเหนื่อยล้าที่ต้องรับผิดชอบ", icon: "🦯" },
-  { name: "Page of Wands", meaning: "ข่าวสารใหม่เกี่ยวกับการงาน การเริ่มต้นเรียนรู้", icon: "🦯" },
-  { name: "Knight of Wands", meaning: "ความกระตือรือร้น การเดินทาง และความมุ่งมั่นลุยงาน", icon: "🦯" },
+  { name: "Nine of Wands", meaning: "ความอดทนและการเตรียมพร้อมรับมืออุปสรรคสุดท้าย", icon: "🦯" },
+  { name: "Ten of Wands", meaning: "ภาระงานที่หนักอึ้งและความเหนื่อยล้า", icon: "🦯" },
+  { name: "Page of Wands", meaning: "ข่าวสารใหม่ การเริ่มต้นเรียนรู้สิ่งใหม่ๆ", icon: "🦯" },
+  { name: "Knight of Wands", meaning: "ความกระตือรือร้น การเดินทาง และความมุ่งมั่น", icon: "🦯" },
   { name: "Queen of Wands", meaning: "เสน่ห์ ความมั่นใจ และความเป็นผู้นำที่อบอุ่น", icon: "🦯" },
   { name: "King of Wands", meaning: "วิสัยทัศน์กว้างไกล ความเป็นมืออาชีพที่ได้รับการยอมรับ", icon: "🦯" },
 
   // Cups (14)
-  { name: "Ace of Cups", meaning: "ความรักครั้งใหม่ อารมณ์ที่เปี่ยมล้น และมิตรภาพที่สวยงาม", icon: "🍷" },
+  { name: "Ace of Cups", meaning: "ความรักครั้งใหม่ มิตรภาพที่สวยงาม และอารมณ์ที่เปี่ยมล้น", icon: "🍷" },
   { name: "Two of Cups", meaning: "ความเข้าใจตรงกัน การเริ่มต้นความสัมพันธ์ที่เกื้อกูล", icon: "🍷" },
-  { name: "Three of Cups", meaning: "การสังสรรค์ ความยินดี และความรักในหมู่เพื่อนฝูง", icon: "🍷" },
+  { name: "Three of Cups", meaning: "ความยินดี การเฉลิมฉลอง และมิตรภาพในกลุ่มเพื่อน", icon: "🍷" },
   { name: "Four of Cups", meaning: "ความเบื่อหน่าย การปฏิเสธโอกาสที่หยิบยื่นมาให้", icon: "🍷" },
-  { name: "Five of Cups", meaning: "ความผิดหวังเสียใจ แต่ยังมีสิ่งดีๆ หลงเหลืออยู่", icon: "🍷" },
+  { name: "Five of Cups", meaning: "ความเสียใจจากสิ่งที่เสียไป แต่ยังมีสิ่งดีๆ เหลืออยู่", icon: "🍷" },
   { name: "Six of Cups", meaning: "ความคิดถึงอดีต มิตรภาพเก่าๆ หรือการหวนคืนของสิ่งดีๆ", icon: "🍷" },
   { name: "Seven of Cups", meaning: "ทางเลือกมากมาย จินตนาการ และความเพ้อฝัน", icon: "🍷" },
   { name: "Eight of Cups", meaning: "การเดินจากสิ่งเดิมไปเพื่อค้นหาความหมายใหม่ในชีวิต", icon: "🍷" },
   { name: "Nine of Cups", meaning: "ความสมปรารถนา ความพึงพอใจในสิ่งที่ตนมี", icon: "🍷" },
-  { name: "Ten of Cups", meaning: "ครอบครัวที่อบอุ่น ความรักที่สมบูรณ์แบบในทุกด้าน", icon: "🍷" },
-  { name: "Page of Cups", meaning: "ข่าวดีเรื่องความรู้สึก จินตนาการที่เริ่มเป็นรูปเป็นร่าง", icon: "🍷" },
-  { name: "Knight of Cups", meaning: "คำเชิญชวนที่โรแมนติก ความอ่อนโยน และข่าวสารที่ดี", icon: "🍷" },
+  { name: "Ten of Cups", meaning: "ความสุขสมบูรณ์ในครอบครัวและความรักที่ยั่งยืน", icon: "🍷" },
+  { name: "Page of Cups", meaning: "ข่าวดีเรื่องความรู้สึก จินตนาการที่เริ่มเป็นรูปธรรม", icon: "🍷" },
+  { name: "Knight of Cups", meaning: "คำเชิญชวนที่โรแมนติก ข่าวดีจากหัวใจ", icon: "🍷" },
   { name: "Queen of Cups", meaning: "สัญชาตญาณ ความเมตตา และการดูแลด้วยหัวใจ", icon: "🍷" },
   { name: "King of Cups", meaning: "ความมั่นคงทางอารมณ์ ความใจเย็น และความมีเสน่ห์", icon: "🍷" },
 
   // Swords (14)
-  { name: "Ace of Swords", meaning: "ความชัดเจน การตัดสินใจที่เด็ดขาด และความสำเร็จจากปัญญา", icon: "🗡️" },
+  { name: "Ace of Swords", meaning: "ความชัดเจน การตัดสินใจที่เด็ดขาด และชัยชนะจากปัญญา", icon: "🗡️" },
   { name: "Two of Swords", meaning: "การลังเลใจที่เลือกไม่ถูก หรือการหยุดพักเพื่อไตร่ตรอง", icon: "🗡️" },
-  { name: "Three of Swords", meaning: "ความเสียใจจากคำพูดหรือเหตุการณ์กะทันหันที่ต้องผ่านไปให้ได้", icon: "🗡️" },
-  { name: "Four of Swords", meaning: "การหยุดพักร่างกายและจิตใจเพื่อสะสมพลัง", icon: "🗡️" },
-  { name: "Five of Swords", meaning: "ความขัดแย้งที่ไม่มีใครชนะอย่างแท้จริง หรือการถอยออกมา", icon: "🗡️" },
-  { name: "Six of Swords", meaning: "การก้าวข้ามผ่านช่วงเวลาที่ยากลำบากไปสู่ที่ที่ปลอดภัย", icon: "🗡️" },
-  { name: "Seven of Swords", meaning: "ความลับ แผนการที่ต้องใช้ไหวพริบ หรือการเอาตัวรอด", icon: "🗡️" },
+  { name: "Three of Swords", meaning: "ความเสียใจจากเหตุการณ์กะทันหันที่ต้องผ่านไปให้ได้", icon: "🗡️" },
+  { name: "Four of Swords", meaning: "การพักผ่อนเพื่อฟื้นฟูร่างกายและจิตใจ", icon: "🗡️" },
+  { name: "Five of Swords", meaning: "ความขัดแย้งที่ไม่มีใครชนะอย่างแท้จริง หรือการยอมถอย", icon: "🗡️" },
+  { name: "Six of Swords", meaning: "การก้าวข้ามผ่านอุปสรรคไปสู่พื้นที่ที่สงบกว่า", icon: "🗡️" },
+  { name: "Seven of Swords", meaning: "แผนการที่ต้องใช้ไหวพริบ ความลับ หรือการเอาตัวรอด", icon: "🗡️" },
   { name: "Eight of Swords", meaning: "ความรู้สึกถูกพันธนาการจากความคิดและทัศนคติของตัวเอง", icon: "🗡️" },
-  { name: "Nine of Swords", meaning: "ความวิตกกังวล ความเครียดที่เกิดจากความคิดฟุ้งซ่าน", icon: "🗡️" },
-  { name: "Ten of Swords", meaning: "จุดจบของปัญหาที่ทรมาน เพื่อเริ่มต้นสิ่งใหม่ที่ไร้ความกังวล", icon: "🗡️" },
+  { name: "Nine of Swords", meaning: "ความวิตกกังวล ความเครียดที่เกิดจากการคิดฟุ้งซ่าน", icon: "🗡️" },
+  { name: "Ten of Swords", meaning: "จุดจบของปัญหาที่ทรมาน เพื่อเริ่มต้นสิ่งใหม่ที่ไร้กังวล", icon: "🗡️" },
   { name: "Page of Swords", meaning: "ความอยากรู้อยากเห็น การสืบเสาะ และความระแวดระวัง", icon: "🗡️" },
   { name: "Knight of Swords", meaning: "ความรวดเร็ว การลุยไปข้างหน้าอย่างเด็ดเดี่ยว", icon: "🗡️" },
   { name: "Queen of Swords", meaning: "ความเฉลียวฉลาด ความตรงไปตรงมา และความเข้มแข็ง", icon: "🗡️" },
-  { name: "King of Swords", meaning: "ความยุติธรรม การตัดสินด้วยเหตุผลและความยุติธรรม", icon: "🗡️" },
+  { name: "King of Swords", meaning: "ความยุติธรรม การตัดสินด้วยเหตุผลและความจริง", icon: "🗡️" },
 
   // Pentacles (14)
   { name: "Ace of Pentacles", meaning: "โอกาสทางการเงินใหม่ๆ และความมั่นคงที่เริ่มก่อตัว", icon: "🪙" },
   { name: "Two of Pentacles", meaning: "การบริหารจัดการเงินและเวลา การปรับสมดุลในชีวิต", icon: "🪙" },
-  { name: "Three of Pentacles", meaning: "การร่วมมือกันทำงานเป็นทีม การได้รับการยกย่องในฝีมือ", icon: "🪙" },
-  { name: "Four of Pentacles", meaning: "ความมั่นคงที่มากเกินจนกลายเป็นความยึดติดหรือหวงแหน", icon: "🪙" },
+  { name: "Three of Pentacles", meaning: "การทำงานร่วมกันเป็นทีม และการได้รับคำชมในฝีมือ", icon: "🪙" },
+  { name: "Four of Pentacles", meaning: "ความหวงแหนทรัพย์สิน หรือความมั่นคงที่ยึดติดเกินไป", icon: "🪙" },
   { name: "Five of Pentacles", meaning: "ช่วงเวลาที่ยากลำบากทางการเงิน แต่ยังมีที่พึ่งพิง", icon: "🪙" },
   { name: "Six of Pentacles", meaning: "การแบ่งปัน การให้และได้รับความช่วยเหลือที่เท่าเทียม", icon: "🪙" },
-  { name: "Seven of Pentacles", meaning: "การรอคอยผลผลิตจากการทำงานหนัก ความอดทนเห็นผลสำเร็จ", icon: "🪙" },
+  { name: "Seven of Pentacles", meaning: "การรอคอยผลผลิตจากการทำงานหนัก ความอดทนเห็นผล", icon: "🪙" },
   { name: "Eight of Pentacles", meaning: "ความมุ่งมั่นพัฒนาทักษะ การทำงานที่ประณีตตั้งใจ", icon: "🪙" },
-  { name: "Nine of Pentacles", meaning: "ความมั่งคั่งด้วยตัวเอง ความหรูหรา และชีวิตที่ลงตัว", icon: "🪙" },
+  { name: "Nine of Pentacles", meaning: "ความมั่งคั่งด้วยตนเอง ความหรูหรา และชีวิตที่ลงตัว", icon: "🪙" },
   { name: "Ten of Pentacles", meaning: "มรดก ความมั่นคงในระยะยาวของครอบครัวและทรัพย์สิน", icon: "🪙" },
   { name: "Page of Pentacles", meaning: "ข่าวดีเรื่องโชคลาภ การเริ่มต้นเรียนรู้เรื่องการลงทุน", icon: "🪙" },
-  { name: "Knight of Pentacles", meaning: "ความรับผิดชอบที่สม่ำเสมอ ความก้าวหน้าแบบค่อยเป็นค่อยไป", icon: "🪙" },
-  { name: "Queen of Pentacles", meaning: "ความใจกว้าง การดูแลจัดการทรัพย์สิน และความอุดมสมบูรณ์", icon: "🪙" },
-  { name: "King of Pentacles", meaning: "ความสำเร็จทางการเงินระดับสูง ความเป็นเศรษฐีที่ใจดี", icon: "🪙" }
+  { name: "Knight of Pentacles", meaning: "ความรับผิดชอบที่สม่ำเสมอ ความก้าวหน้าอย่างมั่นคง", icon: "🪙" },
+  { name: "Queen of Pentacles", meaning: "ความใจกว้าง การดูแลจัดการ และความอุดมสมบูรณ์", icon: "🪙" },
+  { name: "King of Pentacles", meaning: "ความสำเร็จทางการเงินระดับสูง ความมั่นคงสูงสุด", icon: "🪙" }
 ];
 
 const SERVICES = [
   { id: 1, name: "Yes or No", price: "19.-", desc: "คำตอบชัดเจนสำหรับเรื่องที่กำลังลังเล", icon: <Check size={14} className="text-green-400" /> },
   { id: 2, name: "One Question", price: "29.-", desc: "เจาะลึกเฉพาะเรื่องที่คุณอยากรู้ที่สุด", icon: <Star size={14} className="text-blue-400" /> },
-  { id: 3, name: "Five Questions", price: "99.-", desc: "เช็กดวงรอบด้านหรือถามได้ทุกเรื่องที่สงสัย", icon: <Sparkles size={14} className="text-purple-400" /> },
-  { id: 4, name: "Custom Wallpaper", price: "199.-", desc: "ออกแบบเลขวอลล์เปเปอร์สายมูเฉพาะบุคคล", icon: <Palette size={14} className="text-pink-400" /> },
-  { id: 5, name: "Tarot Pre-order", price: "Shop", desc: "รับพรีไพ่ยิปซี", icon: <ShoppingBag size={14} className="text-amber-400" />, url: "https://shopee.co.th/lunaria429" },
+  { id: 3, name: "Five Questions", price: "99.-", desc: "เช็กดวงรอบด้านหรือถามได้ทุกเรื่อง", icon: <Sparkles size={14} className="text-purple-400" /> },
+  { id: 4, name: "Custom Wallpaper", price: "199.-", desc: "ออกแบบเลขวอลล์เปเปอร์สายมูส่วนตัว", icon: <Palette size={14} className="text-pink-400" /> },
+  { id: 5, name: "Tarot Pre-order", price: "Shop", desc: "รับพรีไพ่ยิปซี", icon: <ShoppingBag size={14} className="text-amber-400" />, url: SHOPEE_URL },
 ];
 
 const FloatingEmoji = ({ emoji }) => {
-  const randomStyles = useMemo(() => ({
+  const styles = useMemo(() => ({
     left: `${Math.random() * 100}%`,
     top: `${Math.random() * 100}%`,
-    fontSize: `${Math.random() * 6 + 10}px`, 
-    animationDuration: `${Math.random() * 25 + 35}s`, 
+    fontSize: `${Math.random() * 10 + 10}px`, 
+    animationDuration: `${Math.random() * 20 + 20}s`, 
     animationDelay: `${Math.random() * -20}s`,
     opacity: 0.12
   }), []);
-
-  return (
-    <div className="absolute animate-float pointer-events-none select-none z-0" style={randomStyles}>
-      {emoji}
-    </div>
-  );
+  return <div className="absolute animate-float pointer-events-none select-none z-0" style={styles}>{emoji}</div>;
 };
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
-  const [reviews, setReviews] = useState([
-    { id: 'initial', text: 'หน้าเว็บสวยมากค่ะ ดูแล้วรู้สึกพลังงานดีเลย ✨', createdAt: { seconds: Date.now()/1000 } }
-  ]);
+  const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fortune, setFortune] = useState(null);
@@ -215,9 +204,7 @@ export default function App() {
     const q = collection(db, 'artifacts', appId, 'public', 'data', 'reviews');
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      if (data.length > 0) {
-        setReviews(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-      }
+      setReviews(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
     }, (err) => console.error("Firestore error:", err));
     return () => unsubscribe();
   }, [user]);
@@ -233,43 +220,44 @@ export default function App() {
         createdAt: serverTimestamp()
       });
       setNewReview('');
-    } catch (err) { console.error("Failed to post review:", err); } finally { setIsSubmitting(false); }
+    } catch (err) { console.error("Review failed:", err); } finally { setIsSubmitting(false); }
   };
 
   const drawDailyCard = () => {
-    const randomIndex = Math.floor(Math.random() * TAROT_DECK.length);
-    setFortune(TAROT_DECK[randomIndex]);
+    setFortune(TAROT_DECK[Math.floor(Math.random() * TAROT_DECK.length)]);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#F0F9FF] via-[#E0F2FE] to-[#F5F3FF] text-[#374151] font-sans tracking-tight relative overflow-x-hidden pb-20">
+    <div className="min-h-screen bg-gradient-to-tr from-[#F0F9FF] via-[#E0F2FE] to-[#F5F3FF] text-[#374151] font-sans relative overflow-x-hidden pb-20">
       
+      {/* Background Decor */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {Array.from({ length: 18 }).map((_, i) => (
+        {Array.from({ length: 30 }).map((_, i) => (
           <FloatingEmoji key={i} emoji={EMOJIS[i % EMOJIS.length]} />
         ))}
       </div>
 
       <main className="relative z-10 w-full max-w-sm md:max-w-3xl lg:max-w-5xl mx-auto px-4 md:px-8 py-12 flex flex-col min-h-screen transition-all duration-500">
         
+        {/* Header */}
         <header className="text-center mb-10">
           <div className="relative inline-block mb-6">
             <div className="absolute inset-0 bg-[#3B82F6]/20 rounded-full blur-3xl animate-pulse"></div>
             <div className="w-28 h-28 md:w-36 md:h-36 rounded-full border-4 border-white p-1 relative bg-white shadow-xl overflow-hidden">
-              <img src={LALIN_PROFILE} alt="Lalin Profile Logo" className="w-full h-full object-cover rounded-full" />
+              <img src={LALIN_PROFILE} alt="Lalin Space Logo" className="w-full h-full object-cover rounded-full" />
             </div>
           </div>
           <h1 className="text-3xl md:text-5xl font-serif tracking-[0.15em] text-[#1E40AF] uppercase mb-1 font-bold">Lalin Space</h1>
           <p className="text-[11px] md:text-sm tracking-[0.4em] text-[#60A5FA] uppercase font-extrabold opacity-90">Celestial Soul Guidance</p>
         </header>
 
-        {/* Navigation Section - Added Queue Back */}
+        {/* Navigation */}
         <nav className="flex justify-center flex-wrap gap-2 md:gap-4 mb-10">
           {['home', 'about', 'reviews', 'queue'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all px-5 py-2.5 rounded-full font-bold shadow-sm ${
+              className={`text-[10px] md:text-xs tracking-[0.15em] uppercase transition-all px-6 py-3 rounded-full font-bold shadow-sm ${
                 activeTab === tab 
                 ? 'bg-[#3B82F6] text-white shadow-blue-200' 
                 : 'text-[#1E40AF] bg-white/70 hover:bg-white'
@@ -280,171 +268,141 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="flex-1 flex flex-col">
+        {/* Tab Content */}
+        <div className="flex-1">
           
           {activeTab === 'home' && (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <section className="bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] md:rounded-[3rem] border border-white shadow-md text-center max-w-2xl mx-auto w-full">
+              <section className="bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] border border-white shadow-md text-center max-w-2xl mx-auto">
                 <p className="text-[14px] md:text-lg leading-relaxed font-semibold text-[#4B5563] italic">
                   "ให้ท้องฟ้าสีครามและแสงดาว นำทางคุณไปสู่ความสงบและคำตอบภายในใจ"
                 </p>
               </section>
 
+              {/* Tarot Section */}
               <section className="text-center">
                 {fortune ? (
-                  <div className="animate-in zoom-in duration-500 bg-white p-8 md:p-12 rounded-[2.5rem] border-2 border-[#E0F2FE] shadow-2xl relative overflow-hidden max-w-md mx-auto">
+                  <div className="animate-in zoom-in duration-500 bg-white p-8 md:p-12 rounded-[3rem] border-2 border-[#E0F2FE] shadow-2xl relative overflow-hidden max-w-md mx-auto">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-100"></div>
-                    <span className="text-5xl md:text-6xl block mb-4 animate-bounce">{fortune.icon}</span>
-                    <h4 className="text-lg md:text-xl tracking-widest text-[#1E40AF] uppercase mb-2 font-bold uppercase">{fortune.name}</h4>
-                    <p className="text-[14px] md:text-base text-[#374151] leading-relaxed font-medium px-2">{fortune.meaning}</p>
-                    <button onClick={() => setFortune(null)} className="mt-8 text-[11px] md:text-xs uppercase font-bold text-[#3B82F6] hover:text-[#1E40AF] underline underline-offset-4 font-sans">สุ่มใบใหม่</button>
+                    <span className="text-6xl block mb-4 animate-bounce">{fortune.icon}</span>
+                    <h4 className="text-xl tracking-widest text-[#1E40AF] uppercase mb-2 font-bold font-serif">{fortune.name}</h4>
+                    <p className="text-base text-[#374151] leading-relaxed font-medium">{fortune.meaning}</p>
+                    <button onClick={() => setFortune(null)} className="mt-8 text-xs uppercase font-bold text-[#3B82F6] hover:text-[#1E40AF] underline underline-offset-4">สุ่มใบใหม่</button>
                   </div>
                 ) : (
-                  <button onClick={drawDailyCard} className="group relative inline-flex items-center justify-center px-12 py-5 font-bold text-white transition-all bg-[#3B82F6] rounded-full shadow-lg hover:bg-[#2563EB] active:scale-95 text-sm md:text-base">
+                  <button onClick={drawDailyCard} className="group relative inline-flex items-center justify-center px-12 py-5 font-bold text-white transition-all bg-[#3B82F6] rounded-full shadow-lg hover:bg-[#2563EB] active:scale-95">
                     <span className="tracking-[0.2em] uppercase">Draw Daily Card</span>
                   </button>
                 )}
               </section>
 
+              {/* Services Grid */}
               <div className="space-y-6">
-                <h3 className="text-[11px] md:text-xs tracking-[0.3em] uppercase text-[#3B82F6] font-extrabold text-center mb-2 opacity-60">Celestial Services</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 service-grid">
+                <h3 className="text-[11px] tracking-[0.3em] uppercase text-[#3B82F6] font-extrabold text-center opacity-60">Celestial Services</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   {SERVICES.map(s => (
-                    <a 
-                      key={s.id} 
-                      href={s.url || LINE_URL} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="flex justify-between items-center bg-white/90 p-5 md:p-6 rounded-3xl border border-white shadow-sm hover:shadow-md transition-all hover:bg-white group cursor-pointer"
-                    >
+                    <a key={s.id} href={s.url || LINE_URL} target="_blank" rel="noopener noreferrer" className="flex justify-between items-center bg-white/90 p-6 rounded-[2rem] border border-white shadow-sm hover:shadow-md transition-all group cursor-pointer">
                       <div className="flex-1 pr-2">
                         <div className="flex items-center gap-2 mb-1">
                           {s.icon}
-                          <h4 className="text-[13px] md:text-base font-bold text-[#374151] group-hover:text-[#3B82F6] transition-colors uppercase">{s.name}</h4>
+                          <h4 className="text-base font-bold text-[#374151] group-hover:text-[#3B82F6] uppercase">{s.name}</h4>
                         </div>
-                        <p className="text-[10px] md:text-xs text-[#6B7280] font-bold leading-tight">{s.desc}</p>
+                        <p className="text-xs text-[#6B7280] font-bold">{s.desc}</p>
                       </div>
                       <div className="text-right flex items-center gap-3">
-                        <span className="text-[14px] md:text-lg font-extrabold text-[#3B82F6] whitespace-nowrap">{s.price}</span>
-                        <ArrowUpRight size={16} className="text-[#93C5FD] flex-shrink-0" />
+                        <span className="text-lg font-extrabold text-[#3B82F6]">{s.price}</span>
+                        <ArrowUpRight size={16} className="text-[#93C5FD]" />
                       </div>
                     </a>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-3 md:space-y-4 pt-4 max-w-2xl mx-auto w-full">
-                <a href={LINE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-4 rounded-full text-xs md:text-sm font-bold tracking-[0.1em] bg-[#10B981] text-white shadow-lg hover:bg-[#059669] transition-all uppercase">
+              {/* Contact Links */}
+              <div className="space-y-4 pt-4 max-w-2xl mx-auto w-full">
+                <a href={LINE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-4 rounded-full text-sm font-bold tracking-[0.1em] bg-[#10B981] text-white shadow-lg hover:bg-[#059669] transition-all uppercase">
                   <MessageCircle size={18} /> ติดต่อสอบถาม Line : {LINE_ID}
                 </a>
-
-                <div className="grid grid-cols-2 gap-3 md:gap-4">
-                  <a href={IG_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 rounded-full text-[10px] md:text-[11px] font-bold tracking-[0.1em] border-2 border-[#E1306C] text-[#E1306C] bg-white/50 hover:bg-[#E1306C] hover:text-white transition-all uppercase">
-                    <Instagram size={16} /> Instagram
-                  </a>
-                  <a href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 rounded-full text-[10px] md:text-[11px] font-bold tracking-[0.1em] border-2 border-black text-black bg-white/50 hover:bg-black hover:text-white transition-all uppercase">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
-                    TikTok
-                  </a>
+                <div className="grid grid-cols-2 gap-4">
+                  <a href={IG_URL} target="_blank" className="flex items-center justify-center gap-2 py-4 rounded-full text-[11px] font-bold border-2 border-[#E1306C] text-[#E1306C] bg-white/50 hover:bg-[#E1306C] hover:text-white transition-all uppercase"><Instagram size={16} /> Instagram</a>
+                  <a href={TIKTOK_URL} target="_blank" className="flex items-center justify-center gap-2 py-4 rounded-full text-[11px] font-bold border-2 border-black text-black bg-white/50 hover:bg-black hover:text-white transition-all uppercase"><ExternalLink size={16} /> TikTok</a>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 md:gap-4">
-                  <a href={X_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 rounded-full text-[10px] md:text-[11px] font-bold tracking-[0.1em] border-2 border-[#000000] text-[#000000] bg-white/50 hover:bg-black hover:text-white transition-all uppercase">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    X (Twitter)
-                  </a>
-                  <a href={FB_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 rounded-full text-[10px] md:text-[11px] font-bold tracking-[0.1em] border-2 border-[#1877F2] text-[#1877F2] bg-white/50 hover:bg-[#1877F2] hover:text-white transition-all uppercase">
-                    <Facebook size={16} /> Facebook
-                  </a>
+                <div className="grid grid-cols-2 gap-4">
+                  <a href={X_URL} target="_blank" className="flex items-center justify-center gap-2 py-4 rounded-full text-[11px] font-bold border-2 border-[#000000] text-[#000000] bg-white/50 hover:bg-[#000000] hover:text-white transition-all uppercase"><Twitter size={16} /> X (Twitter)</a>
+                  <a href={FB_URL} target="_blank" className="flex items-center justify-center gap-2 py-4 rounded-full text-[11px] font-bold border-2 border-[#1877F2] text-[#1877F2] bg-white/50 hover:bg-[#1877F2] hover:text-white transition-all uppercase"><Facebook size={16} /> Facebook</a>
                 </div>
               </div>
             </div>
           )}
 
+          {/* ABOUT TAB */}
           {activeTab === 'about' && (
-            <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
-              <div className="bg-white/80 backdrop-blur-xl p-8 md:p-12 rounded-[3rem] shadow-xl border border-white flex flex-col md:flex-row gap-8 items-center">
-                <div className="w-24 h-24 md:w-32 md:h-32 bg-[#F5F3FF] rounded-full flex items-center justify-center border border-[#DDD6FE] shrink-0"><User size={48} className="text-[#8B5CF6]" /></div>
+            <div className="animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
+              <div className="bg-white/80 backdrop-blur-xl p-10 rounded-[3rem] shadow-xl border border-white flex flex-col md:flex-row gap-8 items-center">
+                <div className="w-32 h-32 bg-[#F5F3FF] rounded-full flex items-center justify-center border border-[#DDD6FE] shrink-0"><User size={48} className="text-[#8B5CF6]" /></div>
                 <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-2xl md:text-3xl font-bold text-[#1E40AF] uppercase tracking-widest mb-4">About Lalin</h3>
-                  <p className="text-lg md:text-xl font-bold text-[#1E40AF]">"สวัสดีค่ะ ยินดีต้อนรับสู่ LALIN SPACE นะคะ"</p>
+                  <h3 className="text-3xl font-bold text-[#1E40AF] uppercase tracking-widest mb-4 font-serif">About Lalin</h3>
+                  <p className="text-xl font-bold text-[#1E40AF] mb-4">"สวัสดีค่ะ ยินดีต้อนรับสู่ LALIN SPACE นะคะ"</p>
+                  <p className="text-[#4B5563] leading-relaxed">ลลินพร้อมมอบพลังงานบวกและคำแนะนำผ่านดวงดาว เพื่อช่วยให้คุณค้นพบความสงบและแนวทางที่ชัดเจนในชีวิต พร้อมดูแลด้วยหัวใจค่ะ</p>
                 </div>
               </div>
             </div>
           )}
 
+          {/* REVIEWS TAB */}
           {activeTab === 'reviews' && (
-            <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
-              <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-lg border border-blue-50">
-                <form onSubmit={postReview} className="relative mb-12">
-                  <input type="text" value={newReview} onChange={(e) => setNewReview(e.target.value)} placeholder="แชร์ความรู้สึกของคุณ..." className="w-full bg-[#F9FAFB] border-2 border-transparent focus:border-[#BAE6FD] rounded-full py-5 pl-8 pr-16 text-sm md:text-base text-[#374151] font-medium focus:outline-none transition-all shadow-inner" />
-                  <button type="submit" disabled={isSubmitting || !newReview.trim()} className="absolute right-3 top-3 w-10 h-10 md:w-12 md:h-12 bg-[#3B82F6] text-white rounded-full flex items-center justify-center hover:bg-[#2563EB] transition-all disabled:opacity-30"><Send size={20}/></button>
+            <div className="animate-in fade-in duration-500 max-w-4xl mx-auto w-full">
+              <div className="bg-white p-8 rounded-[3rem] shadow-lg border border-blue-50">
+                <form onSubmit={postReview} className="relative mb-10">
+                  <input type="text" value={newReview} onChange={(e) => setNewReview(e.target.value)} placeholder="แชร์ความรู้สึกของคุณ..." className="w-full bg-[#F9FAFB] border-2 border-transparent focus:border-[#BAE6FD] rounded-full py-5 px-8 text-sm focus:outline-none transition-all shadow-inner font-medium" />
+                  <button type="submit" disabled={isSubmitting || !newReview.trim()} className="absolute right-3 top-3 w-12 h-12 bg-[#3B82F6] text-white rounded-full flex items-center justify-center hover:bg-[#2563EB] disabled:opacity-30"><Send size={20}/></button>
                 </form>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                  {reviews.map(r => (
-                    <div key={r.id} className="bg-[#F0F9FF]/70 p-5 rounded-3xl border border-white shadow-sm hover:shadow-md transition-all">
-                      <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-[#3B82F6] flower-pulse"></div><span className="text-[10px] md:text-xs uppercase font-extrabold text-[#1E40AF]">Soul Feedback</span></div>
-                      <p className="text-[13px] md:text-base text-[#4B5563] font-bold leading-relaxed">{r.text}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                  {reviews.length > 0 ? reviews.map(r => (
+                    <div key={r.id} className="bg-[#F0F9FF]/70 p-5 rounded-3xl border border-white shadow-sm">
+                      <div className="flex items-center gap-2 mb-2"><div className="w-2 h-2 rounded-full bg-[#3B82F6]"></div><span className="text-[10px] uppercase font-extrabold text-[#1E40AF]">Soul Feedback</span></div>
+                      <p className="text-sm text-[#4B5563] font-bold leading-relaxed">{r.text}</p>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="col-span-full text-center py-10 opacity-30 font-bold uppercase tracking-widest text-xs">No feedback yet</div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB: QUEUE (Restored Section) */}
+          {/* QUEUE TAB */}
           {activeTab === 'queue' && (
-            <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto w-full">
-              <div className="bg-white/90 backdrop-blur-xl p-8 md:p-10 rounded-[3rem] shadow-xl border border-white space-y-6">
-                <div className="text-center mb-4">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
-                    <Calendar size={32} className="text-[#3B82F6]" />
-                  </div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-[#1E40AF] uppercase tracking-widest mb-1 uppercase">Queue & Schedule</h3>
-                  <p className="text-xs md:text-sm text-gray-400 uppercase font-bold tracking-[0.2em]">เช็คคิวจองคิวล่วงหน้า</p>
+            <div className="animate-in fade-in duration-500 max-w-5xl mx-auto w-full">
+              <div className="bg-white/90 backdrop-blur-xl p-8 rounded-[3rem] shadow-xl border border-white space-y-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100"><Calendar size={32} className="text-[#3B82F6]" /></div>
+                  <h3 className="text-3xl font-bold text-[#1E40AF] uppercase tracking-widest mb-1 font-serif">Queue & Schedule</h3>
+                  <p className="text-xs text-gray-400 font-bold tracking-[0.2em]">เช็คคิวและตารางวันว่าง</p>
                 </div>
-
-                {/* Google Calendar Iframe Wrapper */}
-                <div className="relative w-full aspect-[4/5] md:aspect-video rounded-[2rem] overflow-hidden border border-blue-100 shadow-inner bg-white">
-                  <iframe 
-                    src={GOOGLE_CALENDAR_URL} 
-                    style={{ border: 0 }} 
-                    width="100%" 
-                    height="100%" 
-                    frameBorder="0" 
-                    scrolling="no"
-                    title="Google Calendar"
-                  ></iframe>
+                <div className="relative w-full aspect-[4/5] md:aspect-video rounded-3xl overflow-hidden border border-blue-100 shadow-inner">
+                  <iframe src={GOOGLE_CALENDAR_URL} className="w-full h-full border-0" scrolling="no" title="Google Calendar"></iframe>
                 </div>
-
-                <div className="space-y-6 pt-4 max-w-2xl mx-auto">
-                  <div className="flex items-center gap-4 bg-blue-50 p-5 rounded-3xl border border-blue-100">
-                    <CheckCircle2 size={24} className="text-blue-500" />
-                    <span className="text-sm md:text-base font-bold text-blue-700">สามารถเช็ควันว่างเบื้องต้นได้จากปฏิทินด้านบน</span>
+                <div className="pt-4 max-w-2xl mx-auto space-y-4">
+                  <div className="flex items-center gap-4 bg-blue-50 p-5 rounded-3xl border border-blue-100 font-bold text-blue-700 text-sm">
+                    <CheckCircle2 size={24} className="text-blue-500 shrink-0" />
+                    <span>ตรวจสอบวันว่างจากปฏิทินและทักจองผ่าน LINE ได้เลยค่ะ</span>
                   </div>
-                  
-                  <a 
-                    href={LINE_URL} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex items-center justify-center gap-3 w-full py-5 rounded-full text-sm md:text-lg font-bold tracking-[0.1em] bg-[#10B981] text-white shadow-xl hover:bg-[#059669] transition-all uppercase"
-                  >
+                  <a href={LINE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 w-full py-5 rounded-full text-lg font-bold bg-[#10B981] text-white shadow-xl hover:bg-[#059669] transition-all uppercase">
                     <MessageSquare size={24} /> ติดต่อ จองคิว Line : {LINE_ID}
                   </a>
                 </div>
               </div>
             </div>
           )}
-
         </div>
 
+        {/* Footer */}
         <footer className="mt-20 text-center space-y-6">
-          <div className="flex justify-center gap-8 opacity-50 text-[#3B82F6]">
-            <Moon size={20} />
-            <Sun size={20} />
-            <Star size={20} />
+          <div className="flex justify-center gap-8 opacity-40 text-[#3B82F6]">
+            <Moon size={20} /> <Sun size={20} /> <Star size={20} />
           </div>
-          <div className="text-xs md:text-sm tracking-[0.8em] uppercase text-[#1E40AF] font-extrabold">
+          <div className="text-[10px] tracking-[0.8em] uppercase text-[#1E40AF] font-extrabold opacity-60">
             LALIN SPACE © 2026
           </div>
         </footer>
@@ -457,26 +415,13 @@ export default function App() {
         .font-serif { font-family: 'Cinzel', serif; }
         @keyframes float {
           0% { transform: translate(0, 0) rotate(0deg); }
-          25% { transform: translate(25px, -25px) rotate(6deg); }
-          50% { transform: translate(-10px, 25px) rotate(-6deg); }
-          75% { transform: translate(20px, 10px) rotate(3deg); }
+          25% { transform: translate(15px, -15px) rotate(4deg); }
+          50% { transform: translate(-5px, 15px) rotate(4deg); }
           100% { transform: translate(0, 0) rotate(0deg); }
         }
         .animate-float { animation: float linear infinite; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.2); border-radius: 10px; }
-        .flower-pulse { animation: flower-pulse 2s infinite; }
-        @keyframes flower-pulse {
-          0% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.2); opacity: 0.7; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        
-        /* Responsive Layout Adjustments through CSS */
-        @media (min-width: 768px) {
-          .service-grid { grid-template-columns: repeat(2, 1fr); }
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.1); border-radius: 10px; }
       `}} />
     </div>
   );
